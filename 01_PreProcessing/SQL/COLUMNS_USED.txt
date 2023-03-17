@@ -1,0 +1,131 @@
+=== Attribute selection 5 fold cross-validation seed: 123 ===
+
+number of folds (%)  attribute
+           0(  0 %)     2 hadm_id
+           0(  0 %)     3 subject_id
+           0(  0 %)     4 admission_type
+           0(  0 %)     5 admission_location
+           0(  0 %)     6 insurance
+           1( 20 %)     7 religion
+           3( 60 %)     8 marital_status
+           0(  0 %)     9 ethnicity
+           5(100 %)    10 costcenter
+           0(  0 %)    11 cpt_cd
+           3( 60 %)    12 diagnoses_seq_num
+           0(  0 %)    13 diagnoses_icd9_code
+           0(  0 %)    14 first_careunit
+           4( 80 %)    15 last_careunit
+           0(  0 %)    16 first_wardid
+           0(  0 %)    17 last_wardid
+           5(100 %)    18 los
+           5(100 %)    19 procedures_seq_num
+           0(  0 %)    20 procedures_icd9_code
+           5(100 %)    21 prev_service
+           1( 20 %)    22 curr_service
+
+###### TABLES AND COLUMNS USED ######
+
+* DENOTES USED IN FOR FINAL PREDICTIONS
+
+        Created Columns		-       Columns we created
+	full_los*		-	full los is created from the dischtime - admittime and is the full length of stay for the hospital visit
+        Admissions (8 Columns)  -       The ADMISSIONS table gives basic information regarding a patient’s admission to the hospital.
+	hadm_id			-	hadm_id is unique for each patients visit to the hospital
+	subject_id		-	subject_id is unique for each patient to visit the hospital
+	admission_type		-	admission_type describes the type of the admission. 4 possible values: 
+						ELECTIVE
+						URGENT
+						NEWBORN	
+						EMERGENCY
+	admission_location	-	admission_location provides information about the previous location of the patient prior to arriving at the hospital. There are 9 possible values:
+						EMERGENCY ROOM ADMIT
+						TRANSFER FROM HOSP/EXTRAM
+						TRANSFER FROM OTHER HEALT
+						CLINIC REFERRAL/PREMATURE
+						** INFO NOT AVAILABLE **
+						TRANSFER FROM SKILLED NUR
+						TRSF WITHIN THIS FACILITY
+						HMO REFERRAL/SICK
+						PHYS REFERRAL/NORMAL DELI
+	insurance		-	insurance is what type of insurance the patient has. 5 possible values:
+						Government
+						Medicaid
+						Medicare
+						Private
+						Self Pay
+	religion*		-	religion is what religion the patient is. 21 possible values:
+						[1] ""  "7TH DAY ADVENTIST" "BAPTIST" "BUDDHIST" "CATHOLIC" "CHRISTIAN SCIENTIST"   
+ 						[7] "EPISCOPALIAN" "GREEK ORTHODOX"  "HEBREW" "HINDU" "JEHOVAH'S WITNESS" "JEWISH"                
+						[13] "LUTHERAN" "METHODIST" "MUSLIM" "NOT SPECIFIED" "OTHER" "PROTESTANT QUAKER"     
+						[19] "ROMANIAN EAST. ORTH" "UNITARIAN-UNIVERSALIST" "UNOBTAINABLE" 
+	marital_status*		-	marital_status is self explanatory. 8 possible values:
+						"" 
+						"DIVORCED" 
+						"LIFE PARTNER" 
+						"MARRIED" 
+						"SEPARATED" 
+						"SINGLE" 
+						"UNKNOWN (DEFAULT)" 
+						"WIDOWED"
+	ethnicity		-	ethnicity is self explanatory. 41 possible values:
+						[1] "AMERICAN INDIAN/ALASKA NATIVE"                            "AMERICAN INDIAN/ALASKA NATIVE FEDERALLY RECOGNIZED TRIBE"
+ 						[3] "ASIAN"                                                    "ASIAN - ASIAN INDIAN"                                    
+ 						[5] "ASIAN - CAMBODIAN"                                        "ASIAN - CHINESE"                                         
+ 						[7] "ASIAN - FILIPINO"                                         "ASIAN - JAPANESE"                                        
+ 						[9] "ASIAN - KOREAN"                                           "ASIAN - OTHER"                                           
+						[11] "ASIAN - THAI"                                             "ASIAN - VIETNAMESE"                                      
+						[13] "BLACK/AFRICAN"                                            "BLACK/AFRICAN AMERICAN"                                  
+						[15] "BLACK/CAPE VERDEAN"                                       "BLACK/HAITIAN"                                           
+						[17] "CARIBBEAN ISLAND"                                         "HISPANIC OR LATINO"                                      
+						[19] "HISPANIC/LATINO - CENTRAL AMERICAN (OTHER)"               "HISPANIC/LATINO - COLOMBIAN"                             
+						[21] "HISPANIC/LATINO - CUBAN"                                  "HISPANIC/LATINO - DOMINICAN"                             
+						[23] "HISPANIC/LATINO - GUATEMALAN"                             "HISPANIC/LATINO - HONDURAN"                              
+						[25] "HISPANIC/LATINO - MEXICAN"                                "HISPANIC/LATINO - PUERTO RICAN"                          
+						[27] "HISPANIC/LATINO - SALVADORAN"                             "MIDDLE EASTERN"                                          
+						[29] "MULTI RACE ETHNICITY"                                     "NATIVE HAWAIIAN OR OTHER PACIFIC ISLANDER"               
+						[31] "OTHER"                                                    "PATIENT DECLINED TO ANSWER"                              
+						[33] "PORTUGUESE"                                               "SOUTH AMERICAN"                                          
+						[35] "UNABLE TO OBTAIN"                                         "UNKNOWN/NOT SPECIFIED"                                   
+						[37] "WHITE"                                                    "WHITE - BRAZILIAN"                                       
+						[39] "WHITE - EASTERN EUROPEAN"                                 "WHITE - OTHER EUROPEAN"                                  
+						[41] "WHITE - RUSSIAN"
+        cptevents (2 Columns)	  -	The CPTEVENTS table contains a list of which current procedural terminology codes were billed for which patients
+	costcenter*		  -	costcenter is the cost center which billed for the corresponding CPT codes. There are two possible cost centers: 
+						ICU
+						Resp
+	cpt_cd			  -	cpt_cd contains the original current procedural terminology (CPT) code
+       diagnoses_icd (2 Columns)  -	Contains ICD diagnoses for patients
+	seq_num*		  -	seq_num provides the order in which the ICD diagnoses relate to the patient. Ordered by priority,does have an impact on the reimbursement.
+	icd9_code		  -	icd9_code contains the actual code corresponding to the diagnosis assigned to the patient for the given row.
+        icu_stays (5 Columns)  	  -	Defines individual icu stay for a patient
+	first_careunit		  - 	first ICU type in which the patient was cared for
+        last_careunit*		  - 	last ICU type in which the patient was cared for
+        first_wardid		  - 	first ICU unit in which the patient stayed
+        last_wardid		  - 	last ICU unit in which the patient stayed
+        los*			  - 	los is the length of stay for the patient for the given ICU stay
+        procedures_icd            -	Contains ICD diagnoses for patients
+	seq_num*		  -	seq_num order in which procedures were performed
+	icd9_code		  -	icd9_code contains the actual code corresponding to the given procedure
+        services (2 Columns)	  -	Lists services that a patient was admitted/transferred under
+	prev_service*		  - 	the previous service that the patient resided under
+	curr_service*		  -	the current service that the patient resides under
+						CMED	-	Cardiac Medical - for non-surgical cardiac related admissions
+						CSURG	-	Cardiac Surgery - for surgical cardiac admissions
+						DENT	-	Dental - for dental/jaw related admissions
+						ENT	-	Ear, nose, and throat - conditions primarily affecting these areas
+						GU	-	Genitourinary - reproductive organs/urinary system
+						GYN	-	Gynecological - female reproductive systems and breasts
+						MED	-	Medical - general service for internal medicine
+						NB	-	Newborn - infants born at the hospital
+						NBB	-	Newborn baby - infants born at the hospital
+						NMED	-	Neurologic Medical - non-surgical, relating to the brain
+						NSURG	-	Neurologic Surgical - surgical, relating to the brain
+						OBS	-	Obstetrics - conerned with childbirth and the care of women giving birth
+						ORTHO	-	Orthopaedic - surgical, relating to the musculoskeletal system
+						OMED	-	Orthopaedic medicine - non-surgical, relating to musculoskeletal system
+						PSURG	-	Plastic - restortation/reconstruction of the human body (including cosmetic or aesthetic)
+						PSYCH	-	Psychiatric - mental disorders relating to mood, behaviour, cognition, or perceptions
+						SURG	-	Surgical - general surgical service not classified elsewhere
+						TRAUM	-	Trauma - injury or damage caused by physical harm from an external source
+						TSURG	-	Thoracic Surgical - surgery on the thorax, located between the neck and the abdomen
+						VSURG	-	Vascular Surgical - surgery relating to the circulatory system

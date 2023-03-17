@@ -1,0 +1,49 @@
+#### OCCURENCES OF TOP 30 ICD9 CODES IN MIMIC III ####
+SELECT icd9_code, COUNT(icd9_code) FROM icd9Trunc GROUP BY icd9_code ORDER BY count DESC LIMIT 30;
+
+########################### USED FOR TABLE CREATION ######################
+
+#### INITIAL LOS TABLE CREATE ####
+CREATE TABLE losPredict_v2
+AS SELECT DISTINCT ON (adm.hadm_id)
+        adm.hadm_id, adm.subject_id, adm.admittime, adm.dischtime, adm.admission_type, adm.admission_location, adm.insurance, adm.religion, adm.marital_status, adm.ethnicity,
+        cpt.costcenter, cpt.cpt_cd,
+        dia.seq_num diagnoses_seq_num, dia.icd9_code diagnoses_icd9_code,
+        icu.first_careunit, icu.last_careunit, icu.first_wardid, icu.last_wardid, icu.los,
+        pro.seq_num procedures_seq_num, pro.icd9_code procedures_icd9_code,
+        ser.prev_service, ser.curr_service
+FROM mimiciii.admissions adm
+INNER JOIN mimiciii.cptevents cpt
+ON adm.hadm_id = cpt.hadm_id
+INNER JOIN mimiciii.diagnoses_icd dia
+ON adm.hadm_id = dia.hadm_id
+INNER JOIN mimiciii.icustays icu
+ON adm.hadm_id = icu.hadm_id
+INNER JOIN mimiciii.procedures_icd pro
+ON adm.hadm_id = pro.hadm_id
+INNER JOIN mimiciii.services ser
+ON adm.hadm_id = ser.hadm_id;
+
+#### JOIN ON PROCEDURES ####
+
+
+#### REMOVE ROWS WITH USELESS ICD9 ####
+DELETE FROM lospredict_v3
+WHERE diagnoses_icd9_code LIKE 'V%'
+OR diagnoses_icd9_code LIKE 'E%';
+
+#### SUBSET TO FIRST 3 CHARACTERS FOR CATEGORY (THIS IS APPLIED TO PROCEDURES ICD9 AS WELL BUT SUBSET TO 2 NOT 3) ####
+UPDATE lospredict_v3
+SET diagnoses_icd9_code = SUBSTRING(diagnoses_icd9_code, 1, 3)
+WHERE diagnoses_icd9_code LIKE '%';
+
+#### ADD COLUMN FOR FULL LOS  ####
+ALTER TABLE lospredict_v3 ADD full_LOS double precision; 
+
+#### CREATE FULL LOS FROM ADMIT AND DISCH TIMES ####
+UPDATE losPredict_v3 a SET full_LOS = (SELECT EXTRACT(EPOCH FROM (dischtime - admittime)) FROM lospredict_v3 b WHERE a.admittime = b.admittime AND a.dischtime = b.dischtime);
+
+
+
+
+

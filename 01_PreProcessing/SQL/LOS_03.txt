@@ -1,0 +1,82 @@
+#### CREATE BASE TABLE ONE ####
+
+CREATE TABLE losPredict_v3_base
+AS SELECT DISTINCT ON (adm.hadm_id)
+        adm.hadm_id, adm.subject_id, adm.admittime, adm.dischtime, adm.admission_type, adm.admission_location, adm.insurance, adm.religion, adm.marital_status, adm.ethnicity,
+        cpt.costcenter, cpt.cpt_cd,
+        dia.seq_num diagnoses_seq_num, dia.icd9_code diagnoses_icd9_code,
+        icu.first_careunit, icu.last_careunit, icu.first_wardid, icu.last_wardid, icu.los,
+        ser.prev_service, ser.curr_service
+FROM mimiciii.admissions adm
+INNER JOIN mimiciii.cptevents cpt
+ON adm.hadm_id = cpt.hadm_id
+INNER JOIN diagnoses_seq1 dia
+ON adm.hadm_id = dia.hadm_id
+INNER JOIN mimiciii.icustays icu
+ON adm.hadm_id = icu.hadm_id
+INNER JOIN mimiciii.services ser
+ON adm.hadm_id = ser.hadm_id;
+
+#### ADD FULL LOS ####
+
+ALTER TABLE lospredict_v3_base ADD full_LOS double precision;
+
+UPDATE losPredict_v3_base a SET full_LOS = (SELECT EXTRACT(EPOCH FROM (dischtime - admittime)) FROM lospredict_v3_base b WHERE a.admittime = b.admittime AND a.dischtime = b.dischtime);
+
+#### CREATE BASE TABLE TWO ####
+
+CREATE TABLE losPredict_v3_base2
+AS SELECT a.hadm_id, a.subject_id, a.admittime, a.dischtime, a.admission_type, a.admission_location, a.insurance, a.religion, a.marital_status, a.ethnicity,
+        a.costcenter, a.cpt_cd,
+        a.diagnoses_seq_num, a.diagnoses_icd9_code,
+        a.first_careunit, a.last_careunit, a.first_wardid, a.last_wardid, a.los,
+        a.prev_service, a.curr_service,
+        a.full_los,
+        p.gender, p.dob
+FROM losPredict_v3_base a
+INNER JOIN mimiciii.patients p
+ON a.subject_id = p.subject_id;
+
+#### DROP OLD BASE TABLE ####
+
+DROP TABLE losPredict_v3_base;
+
+#### ADD PATIENT AGE ####
+
+ALTER TABLE lospredict_v3_base2 ADD actual_dob double precision;
+
+UPDATE losPredict_v3_base2 a SET actual_dob = (SELECT EXTRACT(EPOCH FROM (admittime - dob)) FROM lospredict_v3_base2 b WHERE a.admittime = b.admittime AND a.dob = b.dob);
+
+#### CREATE FINAL TABLE ####
+
+CREATE TABLE losPredict_v3
+AS SELECT a.hadm_id, a.subject_id, a.admittime, a.dischtime, a.admission_type, a.admission_location, a.insurance, a.religion, a.marital_status, a.ethnicity,
+        a.costcenter, a.cpt_cd,
+        a.diagnoses_seq_num, a.diagnoses_icd9_code,
+        a.first_careunit, a.last_careunit, a.first_wardid, a.last_wardid, a.los,
+        pro.seq_num procedures_seq_num, pro.icd9_code procedures_icd9_code,
+        a.prev_service, a.curr_service,
+        a.full_los, a.actual_dob, a.gender, a.dob
+FROM losPredict_v3_base2 a
+INNER JOIN mimiciii.procedures_icd pro
+ON a.hadm_id = pro.hadm_id;
+
+#### DROP SECOND BASE TABLE ####
+
+DROP TABLE losPredict_v3_base2;
+
+#### DELETE USELESS ICD9 CODES ####
+
+DELETE FROM lospredict_v3
+WHERE diagnoses_icd9_code LIKE 'V%'
+OR diagnoses_icd9_code LIKE 'E%';
+
+#### SUBSET ICD9 CODES INTO THEIR CATEGORIES ####
+
+UPDATE lospredict_v3
+SET diagnoses_icd9_code = SUBSTRING(diagnoses_icd9_code, 1, 3)
+WHERE diagnoses_icd9_code LIKE '%';
+
+UPDATE lospredict_v3
+SET procedures_icd9_code = SUBSTRING(procedures_icd9_code, 1, 2)
+WHERE procedures_icd9_code LIKE '%';
